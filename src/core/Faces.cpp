@@ -38,46 +38,120 @@
 #include "Faces.hpp"
   
 Faces::Faces(const int nV, const vector<int>& coordIndex) {
-  // TODO
+  try{
+      if(nV<=0) throw 1;
+      _faceIndex = {};
+      for(int i=0; i<coordIndex.size(); i++){
+          if(coordIndex[i] < -1 || coordIndex[i] >= nV) throw 2;
+          if(i == 0 || coordIndex[i-1] == -1) _faceIndex.push_back(i);
+      }
+  }
+  catch(int errNo){
+      if(errNo == 1) cout << "Error: Cantidad incorrecta de vértices.";
+      if(errNo == 2) cout << "Error: Índice de vértice incorrecto.";
+  }
+  _nV = nV;
+  _coordIndex = coordIndex;
+  _faceIndex.push_back(coordIndex.size()); //Agrego un índice que apunta después del último -1, para mejorar la eficiencia de ciertas operaciones.
 }
 
 int Faces::getNumberOfVertices() const {
-  // TODO
-  return 0;
+  return _nV;
 }
 
 int Faces::getNumberOfFaces() const {
-  // TODO
-  return 0;
+    return _faceIndex.size()-1; //Le resto 1 ya que la última posición no apunta a una cara real
 }
 
 int Faces::getNumberOfCorners() const {
-  // TODO
-  return 0;
+    return _coordIndex.size();
 }
 
 int Faces::getFaceSize(const int iF) const {
-  // TODO
-  return 0;
+  try{
+      if(iF < 0 || iF >= getNumberOfFaces()){
+          throw 1;
+      }
+  }
+  catch(...){
+      cout << "Error: Índice de cara incorrecto.";
+  }
+  int firstIndexFace = getFaceFirstCorner(iF);
+  int indexFaceSeparator = getFaceFirstCorner(iF+1) - 1; //El índice del separador de la cara es la posición anterior al índice de la cara siguiente
+  return indexFaceSeparator - firstIndexFace;
 }
 
 int Faces::getFaceFirstCorner(const int iF) const {
-  // TODO
-  return -1;
+  try{
+      if(iF < 0 || iF >= getNumberOfFaces()){
+          throw 1;
+      }
+  }
+  catch(...){
+      cout << "Error: Índice de cara incorrecto.";
+  }
+  return _faceIndex[iF];
 }
 
 int Faces::getFaceVertex(const int iF, const int j) const {
-  // TODO
-  return -1;
+  try{
+      if(iF < 0 || iF >= getNumberOfFaces()){
+          throw 1;
+      }
+      if(j < 0 || j >= getFaceSize(iF)){
+          throw 2;
+      }
+  }
+  catch(int errNo){
+      if(errNo == 1){
+          cout << "Error: Índice de cara incorrecto.";
+      }
+      if(errNo == 2){
+          cout << "Error: Número de esquina fuera del tamaño de la cara.";
+      }
+  }
+  int vertexIndex = getFaceFirstCorner(iF) + j;
+  return _coordIndex[vertexIndex];
 }
 
 int Faces::getCornerFace(const int iC) const {
-  // TODO
-  return -1;
+  try{
+      if(iC < 0 || iC >= getNumberOfCorners()){
+          throw 1;
+      }
+  }
+  catch(...){
+      cout << "Error: Índice de esquina incorrecto.";
+  }
+  int result = -1;
+  if(_coordIndex[iC] != -1){
+      int candidateFace = _faceIndex[getNumberOfFaces()-2]; //El primer candidato es la última cara
+      while(getFaceFirstCorner(candidateFace) > iC){
+          candidateFace--;                             //Recorro las caras desde la última hasta encontrar la primera que empiece antes
+      }
+      result = candidateFace;
+  }
+  return result;   //Obs: Este método se podría hacer mas eficiente haciendo una búsqueda binaria sobre _faceIndex en lugar de un barrido lineal
 }
 
 int Faces::getNextCorner(const int iC) const {
-  // TODO
-  return -1;
+  try{
+      if(iC < 0 || iC >= getNumberOfCorners()){
+          throw 1;
+      }
+  }
+  catch(...){
+      cout << "Error: Índice de esquina incorrecto.";
+  }
+  int result = -1;
+  if(_coordIndex[iC] != -1){
+      int cornerFace = getCornerFace(iC);
+      if(_coordIndex[iC+1] != -1){
+          result = iC+1;
+      } else {
+          result = cornerFace;  //Si la posición siguiente en coordIndex es el separador, la siguiente esquina es la primer esquina de la cara
+      }
+  }
+  return result;
 }
 
