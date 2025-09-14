@@ -36,6 +36,8 @@
 
 #include <math.h>
 #include "Faces.hpp"
+
+#include <iostream> //Para el manejo de excepciones
   
 Faces::Faces(const int nV, const vector<int>& coordIndex) {
   try{
