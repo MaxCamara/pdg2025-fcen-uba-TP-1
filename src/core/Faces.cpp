@@ -79,7 +79,12 @@ int Faces::getFaceSize(const int iF) const {
       cout << "Error: Índice de cara incorrecto.";
   }
   int firstIndexFace = getFaceFirstCorner(iF);
-  int indexFaceSeparator = getFaceFirstCorner(iF+1) - 1; //El índice del separador de la cara es la posición anterior al índice de la cara siguiente
+  int indexFaceSeparator = -1;
+  if(iF == getNumberOfFaces() - 1){
+      indexFaceSeparator = getNumberOfCorners() - 1;
+  } else {
+      indexFaceSeparator = getFaceFirstCorner(iF+1) - 1;
+  }
   return indexFaceSeparator - firstIndexFace;
 }
 
@@ -127,13 +132,13 @@ int Faces::getCornerFace(const int iC) const {
   }
   int result = -1;
   if(_coordIndex[iC] != -1){
-      int candidateFace = _faceIndex[getNumberOfFaces()-2]; //El primer candidato es la última cara
+      int candidateFace = getNumberOfFaces()-1; //El primer candidato es la última cara
       while(getFaceFirstCorner(candidateFace) > iC){
-          candidateFace--;                             //Recorro las caras desde la última hasta encontrar la primera que empiece antes
+          candidateFace--;                      //Recorro las caras desde la última hasta encontrar la primera que empiece antes
       }
       result = candidateFace;
   }
-  return result;   //Obs: Este método se podría hacer mas eficiente haciendo una búsqueda binaria sobre _faceIndex en lugar de un barrido lineal
+  return result;
 }
 
 int Faces::getNextCorner(const int iC) const {

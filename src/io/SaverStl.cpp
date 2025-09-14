@@ -53,15 +53,40 @@ bool SaverStl::save(const char* filename, SceneGraph& wrl) const {
     // Check these conditions
 
     // 1) the SceneGraph should have a single child
+    if(wrl.getNumberOfChildren() != 1) return success;
+    Node* child = wrl[0];
+
     // 2) the child should be a Shape node
+    if(!(child->isShape())) return success;
+    Shape* shape = (Shape*) child;
+
     // 3) the geometry of the Shape node should be an IndexedFaceSet node
+    Node* geometry = shape->getGeometry();
+    if(!(geometry->isIndexedFaceSet())) return success;
+    IndexedFaceSet* ifs = (IndexedFaceSet*) geometry;
 
     // - construct an instance of the Faces class from the IndexedFaceSet
     // - remember to delete it when you are done with it (if necessary)
     //   before returning
 
+    vector<float> coord = ifs->getCoord();
+    vector<int> coordIndex = ifs->getCoordIndex();
+
+    int nV = coord.size()/3;
+
+    Faces* faces = new Faces(nV, coordIndex);
+
     // 4) the IndexedFaceSet should be a triangle mesh
+    if(!(ifs->isTriangleMesh())){
+        delete faces;
+        return success;
+    }
+
     // 5) the IndexedFaceSet should have normals per face
+    if(ifs->getNormalPerVertex()){
+        delete faces;
+        return success;
+    }
 
     // if (all the conditions are satisfied) {
 
@@ -72,7 +97,36 @@ bool SaverStl::save(const char* filename, SceneGraph& wrl) const {
       // otherwise use filename,
       // but first remove directory and extension
 
-      fprintf(fp,"solid %s\n",filename);
+      string name = ifs->getName();
+      if(name == ""){
+          string rawFilename = string(filename);
+          int extIndex = rawFilename.find_last_of('.');
+          int dirIndex = rawFilename.find_last_of('/');
+          rawFilename = (rawFilename.erase(extIndex)).erase(0,dirIndex+1);
+          fprintf(fp,"solid %s\n",rawFilename.c_str());
+      } else {
+          fprintf(fp,"solid %s\n",name.c_str());
+      }
+
+      //fprintf(fp,"solid %s\n",filename);
+
+      int nF = ifs->getNumberOfFaces();
+      for(int iF=0; iF<nF; iF++){
+          vector<float> normals = ifs->getNormal();
+          fprintf(fp, "facet normal %f %f %f\n", normals[iF*3], normals[iF*3+1], normals[iF*3+2]);
+          fprintf(fp, "  outer loop\n");
+          int faceSize = faces->getFaceSize(iF);
+          int iC = faces->getFaceFirstCorner(iF);
+          int i=0;
+          do{
+              int iV = coordIndex[iC];
+              fprintf(fp, "    vertex %f %f %f\n", coord[3*iV], coord[3*iV+1], coord[3*iV+2]);
+              iC = faces->getNextCorner(iC);
+              i++;
+          } while(i<faceSize);
+          fprintf(fp, "  endloop\n");
+          fprintf(fp, "endfacet\n");
+      }
 
       // TODO ...
       // for each face {
@@ -85,6 +139,7 @@ bool SaverStl::save(const char* filename, SceneGraph& wrl) const {
 
     // } endif (all the conditions are satisfied)
 
+    delete(faces);
   }
   return success;
 }
